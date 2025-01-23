@@ -50,6 +50,7 @@ fun SignupPage(modifier: Modifier = Modifier, navController: NavController, auth
     // Input state
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
     val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
 
@@ -94,12 +95,12 @@ fun SignupPage(modifier: Modifier = Modifier, navController: NavController, auth
 
                 Text(
                     text = "Fall Guard",
-                    style = TitleStyle, // Shared TitleStyle
+                    style = TitleStyle,
                     color = Color(0xFF45231D)
                 )
                 Text(
                     text = "Your safety companion",
-                    style = SubtitleStyle, // Shared SubtitleStyle
+                    style = SubtitleStyle,
                     color = Color.Gray
                 )
             }
@@ -118,6 +119,19 @@ fun SignupPage(modifier: Modifier = Modifier, navController: NavController, auth
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Name Input Field
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it},
+                    label = { Text("Name") },
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color(0xFFFF9800),
+                        unfocusedLabelColor = Color(0xFF6C757D)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Email Input Field
                 OutlinedTextField(
@@ -150,7 +164,21 @@ fun SignupPage(modifier: Modifier = Modifier, navController: NavController, auth
 
             // Sign Up Button
             Button(
-                onClick = { authViewModel.signup(email, password) },
+                onClick = {
+                    authViewModel.signup(email, password, name) { isSuccess ->
+                        if (isSuccess) {
+                            Toast.makeText(context, "Signup successful!", Toast.LENGTH_SHORT).show()
+                            navController.navigate("home") // Navigate to the home page
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Signup failed. Please try again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                    }
+                },
                 enabled = authState.value != AuthState.Loading,
                 modifier = Modifier
                     .fillMaxWidth()
