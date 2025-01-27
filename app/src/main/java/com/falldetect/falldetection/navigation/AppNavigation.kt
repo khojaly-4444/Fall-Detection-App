@@ -1,13 +1,14 @@
-package com.falldetect.falldetection
+package com.falldetect.falldetection.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.falldetect.falldetection.pages.HomePage
-import com.falldetect.falldetection.pages.LoginPage
-import com.falldetect.falldetection.pages.SignupPage
+import com.falldetect.falldetection.pages.HomeScreen
+import com.falldetect.falldetection.pages.LoginScreen
+import com.falldetect.falldetection.pages.SignupScreen
+import com.falldetect.falldetection.viewmodels.AuthViewModel
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel) {
@@ -15,13 +16,13 @@ fun AppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel) {
 
     NavHost(navController = navController, startDestination = "login", builder = {
          composable("login"){
-             LoginPage(modifier,navController,authViewModel)
+             LoginScreen(modifier,navController,authViewModel)
          }
         composable("signup"){
-             SignupPage(modifier,navController,authViewModel)
+             SignupScreen(modifier,navController,authViewModel)
          }
         composable("home"){
-            HomePage(modifier,navController,authViewModel)
+            HomeScreen(modifier,navController,authViewModel)
         }
     })
 }

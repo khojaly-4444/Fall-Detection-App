@@ -32,21 +32,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.falldetect.falldetection.AuthState
-import com.falldetect.falldetection.AuthViewModel
+import com.falldetect.falldetection.viewmodels.AuthState
+import com.falldetect.falldetection.viewmodels.AuthViewModel
 import com.falldetect.falldetection.R
 import com.falldetect.falldetection.ui.theme.SubtitleStyle
 import com.falldetect.falldetection.ui.theme.TitleStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignupPage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
+fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
     // Input state
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -165,19 +163,7 @@ fun SignupPage(modifier: Modifier = Modifier, navController: NavController, auth
             // Sign Up Button
             Button(
                 onClick = {
-                    authViewModel.signup(email, password, name) { isSuccess ->
-                        if (isSuccess) {
-                            Toast.makeText(context, "Signup successful!", Toast.LENGTH_SHORT).show()
-                            navController.navigate("home") // Navigate to the home page
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "Signup failed. Please try again.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
-                    }
+                    authViewModel.signup(email, password, name)
                 },
                 enabled = authState.value != AuthState.Loading,
                 modifier = Modifier
