@@ -1,9 +1,11 @@
 package com.falldetect.falldetection.repositories
 
 
+import com.falldetect.falldetection.models.FallEvent
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.tasks.await
 
 // Firebase Operations
 
@@ -84,5 +86,13 @@ class FirebaseRepository(
     // Signout Function
     fun signout() {
         auth.signOut()
+    }
+
+    // Function to fetch fall data
+    suspend fun getFallData(): List<FallEvent> {
+        val snapshot = database.child("fall-data").get().await()
+        return snapshot.children.mapNotNull { child ->
+            child.getValue(FallEvent::class.java)
+        }
     }
 }

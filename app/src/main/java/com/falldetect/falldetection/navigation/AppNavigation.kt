@@ -8,10 +8,11 @@ import androidx.navigation.compose.rememberNavController
 import com.falldetect.falldetection.pages.HomeScreen
 import com.falldetect.falldetection.pages.LoginScreen
 import com.falldetect.falldetection.pages.SignupScreen
+import com.falldetect.falldetection.repositories.FirebaseRepository
 import com.falldetect.falldetection.viewmodels.AuthViewModel
 
 @Composable
-fun AppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel) {
+fun AppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel, firebaseRepository: FirebaseRepository) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "login", builder = {
@@ -22,7 +23,7 @@ fun AppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel) {
              SignupScreen(modifier,navController,authViewModel)
          }
         composable("home"){
-            HomeScreen(modifier,navController,authViewModel)
+            HomeScreen(modifier,navController,authViewModel, firebaseRepository = firebaseRepository)
         }
     })
 }

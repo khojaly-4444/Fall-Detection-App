@@ -1,26 +1,35 @@
 package com.falldetect.falldetection.pages
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.falldetect.falldetection.models.FallEvent
+import com.falldetect.falldetection.viewmodels.FallDataViewModel
 
 // Function for fall data tab
 @Composable
-fun FallDataScreen() {
-    val fallEvents = listOf(
-        "Fall detected on 2025-01-20 at 10:30 AM",
-        "Fall detected on 2025-01-21 at 6:15 PM",
-        "Fall detected on 2025-01-22 at 8:45 PM",
-        "Fall detected on 2025-01-23 at 7:00 AM",
-        "Fall detected on 2025-01-24 at 9:30 PM",
-    )
+fun FallDataScreen(viewModel: FallDataViewModel) {
+    val fallEvents: List<FallEvent> by viewModel.fallData.collectAsState()
+
+    // Mock data for now, changing to real data later
+    LaunchedEffect(Unit) {
+        viewModel.fetchFallData()
+    }
 
     LazyColumn (
         modifier = Modifier
@@ -37,14 +46,34 @@ fun FallDataScreen() {
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
-        items(fallEvents.size) { index ->
-            Text(
-                text = fallEvents[index],
-                fontSize = 16.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(vertical = 8.dp)
+        // Calls Class from FallEvent.kt
+        items(fallEvents) { event ->
+            FallDataCard(
+                fallType = event.fallType,
+                date = event.date,
+                time = event.time,
+                heartRate = event.heartRate
             )
         }
     }
 
+}
+
+@Composable
+fun FallDataCard(fallType: String, date: String, time: String, heartRate: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFD7CCC8)) // Light brown color
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text("Type: $fallType", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Date: $date", fontSize = 16.sp)
+            Text("Time: $time", fontSize = 16.sp)
+            Text("Heart Rate: $heartRate BPM", fontSize = 16.sp, color = Color.Red)
+        }
+    }
 }

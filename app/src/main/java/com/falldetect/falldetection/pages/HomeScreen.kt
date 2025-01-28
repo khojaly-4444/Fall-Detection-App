@@ -26,17 +26,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.falldetect.falldetection.repositories.FirebaseRepository
 import com.falldetect.falldetection.viewmodels.AuthState
 import com.falldetect.falldetection.viewmodels.AuthViewModel
+import com.falldetect.falldetection.viewmodels.FallDataViewModel
+import com.falldetect.falldetection.viewmodels.FallDataViewModelFactory
 
 
 // Function for tabs navigation
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
-
+fun HomeScreen(modifier: Modifier = Modifier,
+               navController: NavController,
+               authViewModel: AuthViewModel,
+               firebaseRepository: FirebaseRepository
+) {
+    val fallDataViewModel: FallDataViewModel = viewModel(
+        factory = FallDataViewModelFactory(firebaseRepository)
+    )
     val authState = authViewModel.authState.observeAsState()
+
+
 
     LaunchedEffect(authState.value) {
         when (authState.value) {
@@ -96,7 +108,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
 
         //Display content of selected tab
         when (selectedTabIndex) {
-            0 -> FallDataScreen()                 // tab for Fall Data
+            0 -> FallDataScreen(viewModel = fallDataViewModel)                 // tab for Fall Data
             1 -> UserLinkScreen(navController = navController, authViewModel = authViewModel)   // Tab for User Linkage
         }
 
