@@ -3,7 +3,11 @@ package com.falldetect.falldetection.repositories
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -44,13 +48,22 @@ class ArduinoManager(private val context: Context) {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
+
             if (hasPermissions()) {
+                val device = result.device
                 if (!scanResults.contains(result)) {
                     scanResults.add(result)
                     Log.d(
                         "ArduinoManager",
-                        "Found device: ${result.device.name}, Address: ${result.device.address}"
+                        "Found device: ${device.name}, Address: ${device.address}"
                     )
+
+                    // Check if its the microcontroller device
+                    if (device.name == "Seeed_BLE"){
+                        Log.d("ArduinoManager", "Found the target device! Connecting...")
+                        stopScanning()                                                          // Stop scanning once Arduino is found
+                        connectToDevice(device)                                                  // Auto-connect to Arduino
+                    }
                 }
             } else {
                 Log.e("ArduinoManager", "Missing Bluetooth permissions!")
@@ -82,7 +95,7 @@ class ArduinoManager(private val context: Context) {
     }
 
     @SuppressLint("MissingPermission")
-    fun startScanning(scanDuration: Long = 10000L) {
+    fun startScanning(targetDeviceName: String? = "Seeed_BLE") {                    // Changes once microcontroller arrives
         if (!hasPermissions()) {
             Log.e("ArduinoManager", "Cannot start scan: Missing permissions")
             return
@@ -92,17 +105,9 @@ class ArduinoManager(private val context: Context) {
         isScanning = true
         scanResults.clear()
 
-        try {
-            bleScanner?.startScan(scanCallback)
-            Log.d("ArduinoManager", "Started BLE scanning...")
-        } catch (e: SecurityException) {
-            Log.e("ArduinoManager", "Bluetooth scan failed: Missing permissions")
-        }
+        bleScanner?.startScan(scanCallback)
+        Log.d("ArduinoManager", "Started BLE scanning...")
 
-        // Stop scanning after the specified duration
-        Handler(Looper.getMainLooper()).postDelayed({
-            stopScanning()
-        }, scanDuration)
     }
 
     @SuppressLint("MissingPermission")
@@ -122,4 +127,33 @@ class ArduinoManager(private val context: Context) {
             Log.e("ArduinoManager", "Bluetooth stop scan failed: Missing permissions")
         }
     }
+
+    @SuppressLint("MissingPermission")
+    fun connectToDevice(device: BluetoothDevice) {
+        Log.d("ArduinoManager", "Attempting to connect to ${device.name} at ${device.address}")
+
+        // Connect to the device using GATT (Generic Attribute Profile)
+        val bluetoothGatt = device.connectGatt(context, false, object : BluetoothGattCallback() {
+            override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+                if (newState == BluetoothProfile.STATE_CONNECTED) {
+                    Log.d("ArduinoManager", "Connected to ${device.name}")
+                    gatt.discoverServices() // Discover available services
+                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    Log.e("ArduinoManager", "Disconnected from ${device.name}")
+                    gatt.close() // Close GATT connection
+                    startScanning()  // Restart Scan if disconnected
+                }
+            }
+
+            override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    Log.d("ArduinoManager", "Services discovered on ${device.name}")
+                    // Here you would read/write characteristics
+                } else {
+                    Log.e("ArduinoManager", "Failed to discover services")
+                }
+            }
+        })
+    }
+
 }
