@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
@@ -20,11 +21,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.falldetect.falldetection.models.FallEvent
 import com.falldetect.falldetection.viewmodels.FallDataViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 // Function for fall data tab
 @Composable
 fun FallDataScreen(viewModel: FallDataViewModel) {
     val fallEvents: List<FallEvent> by viewModel.fallData.collectAsState()
+
+    val auth = FirebaseAuth.getInstance()
+    val userId = auth.currentUser?.uid ?: "" // Get current user id
 
     // Mock data for now, changing to real data later
     LaunchedEffect(Unit) {
@@ -45,6 +50,15 @@ fun FallDataScreen(viewModel: FallDataViewModel) {
                 color = Color(0xFF45231D),
                 modifier = Modifier.padding(bottom = 16.dp)
             )
+            // Button to add mock data
+            Button(
+                onClick = { viewModel.addMockFallEvent(userId) }, // Ensure `userId` is passed
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                Text("Add Mock Fall Event")
+            }
         }
         // Calls Class from FallEvent.kt
         items(fallEvents) { event ->
@@ -56,7 +70,6 @@ fun FallDataScreen(viewModel: FallDataViewModel) {
             )
         }
     }
-
 }
 
 @Composable

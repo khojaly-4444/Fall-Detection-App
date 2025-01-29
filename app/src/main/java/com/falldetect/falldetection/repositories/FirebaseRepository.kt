@@ -88,11 +88,49 @@ class FirebaseRepository(
         auth.signOut()
     }
 
+    fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
+    }
+
+    // Function to add fall event and sync with linked user
+    suspend fun addFallEvent(userId: String,fallEvent: FallEvent) {
+        val currentUid = auth.currentUser?.uid ?: return
+
+        // Store event for the current user
+        val eventRef = database.child("fall-data").child(currentUid).push()
+        eventRef.setValue(fallEvent).await()
+
+        // Get the linked user ID
+        val linkedUidSnapshot = database.child("linked-users").child(currentUid).get().await()
+        val linkedUid = linkedUidSnapshot.getValue(String::class.java)
+
+        // Store event for linked user if one exists
+        if (!linkedUid.isNullOrEmpty()){
+            val linkedEventRef = database.child("fall-data").child(linkedUid).push()
+            linkedEventRef.setValue(fallEvent).await()
+        }
+    }
+
     // Function to fetch fall data
     suspend fun getFallData(): List<FallEvent> {
-        val snapshot = database.child("fall-data").get().await()
-        return snapshot.children.mapNotNull { child ->
-            child.getValue(FallEvent::class.java)
+        val currentUid = auth.currentUser?.uid ?: return emptyList()
+
+        // Get Linked User ID
+        val linkedUidSnapshot = database.child("linked-users").child(currentUid).get().await()
+        val linkedUid = linkedUidSnapshot.getValue(String::class.java)
+
+        // Get fall events for the current user
+        val currentUserSnapshot = database.child("fall-data").child(currentUid).get().await()
+        val currentUserFallData = currentUserSnapshot.children.mapNotNull { it.getValue(FallEvent::class.java) }
+
+        // Get fall events for the linked user if exists
+        val linkedUserFallData = if (!linkedUid.isNullOrEmpty()) {
+            val linkedUserSnapshot = database.child("fall-data").child(linkedUid).get().await()
+            linkedUserSnapshot.children.mapNotNull { it.getValue(FallEvent::class.java) }
+        } else {
+            emptyList()
         }
+        // combine both datasets
+        return (currentUserFallData + linkedUserFallData).distinctBy { it.date + it.time + it.heartRate }
     }
 }

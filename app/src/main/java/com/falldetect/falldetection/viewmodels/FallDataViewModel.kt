@@ -1,5 +1,6 @@
 package com.falldetect.falldetection.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.falldetect.falldetection.models.FallEvent
@@ -27,5 +28,44 @@ class FallDataViewModel(
             _fallData.value = result
         }
     }
+    // Function to add fall data
+    fun addFallEvent(fallEvent: FallEvent) {
+        viewModelScope.launch {
+            val currentUserId = firebaseRepository.getCurrentUserId() // ✅ Get user ID
+            if (currentUserId != null) {
+                firebaseRepository.addFallEvent(currentUserId, fallEvent) // ✅ Now it passes userId
+                fetchFallData()
+            } else {
+                Log.e("FallDataViewModel", "Error: User ID is null")
+            }
+        }
+    }
+    // Function to add mock fall event
+    fun addMockFallEvent(userId: String) {
+        viewModelScope.launch {
+            val mockFallEvent = FallEvent(
+                fallType = "Hard Fall",
+                date = getCurrentDate(),
+                time = getCurrentTime(),
+                heartRate = (60..120).random().toString() // Random heart rate for variety
+            )
+
+            firebaseRepository.addFallEvent(userId, mockFallEvent)
+            fetchFallData()  // Refresh data to reflect the new event
+        }
+    }
+
+    // Function to get the current date
+    private fun getCurrentDate(): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return sdf.format(Date())
+    }
+
+    // Function to get the current time
+    private fun getCurrentTime(): String {
+        val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+        return sdf.format(Date())
+    }
+
 
 }
