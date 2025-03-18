@@ -1,8 +1,13 @@
 package com.falldetect.falldetection.repositories
 
 
+import android.util.Log
+import androidx.compose.runtime.snapshots.Snapshot
 import com.falldetect.falldetection.models.FallEvent
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.ChildEventListener
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
@@ -32,7 +37,12 @@ class FirebaseRepository(
     }
 
     // Signup Function
-    fun signup(email: String, password: String, name: String, callback: (Boolean, String?) -> Unit) {
+    fun signup(
+        email: String,
+        password: String,
+        name: String,
+        callback: (Boolean, String?) -> Unit
+    ) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -93,7 +103,7 @@ class FirebaseRepository(
     }
 
     // Function to add fall event and sync with linked user
-    suspend fun addFallEvent(userId: String,fallEvent: FallEvent) {
+    suspend fun addFallEvent(userId: String, fallEvent: FallEvent) {
         val currentUid = auth.currentUser?.uid ?: return
 
         // Store event for the current user
@@ -105,7 +115,7 @@ class FirebaseRepository(
         val linkedUid = linkedUidSnapshot.getValue(String::class.java)
 
         // Store event for linked user if one exists
-        if (!linkedUid.isNullOrEmpty()){
+        if (!linkedUid.isNullOrEmpty()) {
             val linkedEventRef = database.child("fall-data").child(linkedUid).push()
             linkedEventRef.setValue(fallEvent).await()
         }
@@ -121,7 +131,8 @@ class FirebaseRepository(
 
         // Get fall events for the current user
         val currentUserSnapshot = database.child("fall-data").child(currentUid).get().await()
-        val currentUserFallData = currentUserSnapshot.children.mapNotNull { it.getValue(FallEvent::class.java) }
+        val currentUserFallData =
+            currentUserSnapshot.children.mapNotNull { it.getValue(FallEvent::class.java) }
 
         // Get fall events for the linked user if exists
         val linkedUserFallData = if (!linkedUid.isNullOrEmpty()) {
@@ -132,5 +143,23 @@ class FirebaseRepository(
         }
         // combine both datasets
         return (currentUserFallData + linkedUserFallData).distinctBy { it.date + it.time + it.heartRate }
+    }
+
+    fun listenForFallEvents(userId: String, onNewEvent: (FallEvent) -> Unit) {
+        val fallDataRef = database.child("fall-data").child(userId)
+
+        fallDataRef.addChildEventListener(object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                val newEvent = snapshot.getValue(FallEvent::class.java)
+                newEvent?.let { onNewEvent(it) }
+            }
+
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
+            override fun onChildRemoved(snapshot: DataSnapshot) {}
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("Firebase Repository", "Error listening for fall events: ${error.message}")
+            }
+        })
     }
 }
