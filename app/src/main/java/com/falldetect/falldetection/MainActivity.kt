@@ -20,13 +20,14 @@ import com.falldetect.falldetection.repositories.ArduinoManager
 import com.falldetect.falldetection.repositories.FirebaseRepository
 import com.falldetect.falldetection.ui.theme.FallDetectionTheme
 import com.falldetect.falldetection.viewmodels.AuthViewModel
+import com.falldetect.falldetection.viewmodels.AuthViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.messaging.FirebaseMessaging
 
 class MainActivity : ComponentActivity() {
 
-    // Bluetooth & Location Permissions (Android 12+)
+    // Step 1: Define required permissions (Bluetooth, Location, Notifications)
     private val requiredPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         arrayOf(
             Manifest.permission.BLUETOOTH_SCAN,
@@ -34,21 +35,19 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.ACCESS_FINE_LOCATION
         )
     } else {
-        emptyArray() // Older Android versions do not require these explicitly
+        emptyArray()
     }
 
-    // Step 1: Request Bluetooth & Location permissions
+    // Step 2: Register permission launcher for Bluetooth & Location
     private val requestPermissionsLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             permissions.entries.forEach { entry ->
                 Log.d("Permissions", "${entry.key} = ${entry.value}")
             }
-
-            // Step 2: If Bluetooth permissions granted, request Notification permission
-            checkNotificationPermission()
+            checkNotificationPermission() // If Bluetooth granted, request Notification permission
         }
 
-    // Step 3: Request Notification permission separately (Android 13+)
+    // Step 3: Register permission launcher for Notifications (Android 13+)
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
@@ -58,60 +57,58 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    // Step 4: Function to check permissions sequentially
+    // Step 4: Function to check Bluetooth & Location permissions first
     private fun checkPermissions() {
         val missingPermissions = requiredPermissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
-
         if (missingPermissions.isNotEmpty()) {
-            // Request Bluetooth & Location first
             requestPermissionsLauncher.launch(missingPermissions.toTypedArray())
         } else {
-            // If Bluetooth already granted, request Notification
-            checkNotificationPermission()
+            checkNotificationPermission() // If Bluetooth is granted, check notifications
         }
     }
 
-    // Step 5: Separate function for Notification permission request (Avoid auto-denial bug)
+    // Step 5: Check and request Notification permission (Android 13+)
     private fun checkNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Step 6: Start permission checks (Bluetooth first, then Notifications)
+        // Step 6: Start permission check (Bluetooth first, then Notifications)
         checkPermissions()
 
-        // Step 7: Fetch & Save FCM Token
+        // Step 7: Fetch & Save FCM Token for notifications
         fetchAndSaveFCMToken()
 
         // Enable edge-to-edge UI
         enableEdgeToEdge()
 
+        // Initialize Firebase Repository with context
+        val firebaseRepository = FirebaseRepository(context = this)
+
+        // Initialize ViewModel
+        val authViewModel: AuthViewModel by viewModels {
+            AuthViewModelFactory(applicationContext)
+        }
+
+
         // Initialize ArduinoManager
         val arduinoManager = ArduinoManager(this)
 
-        // Initialize AuthViewModel
-        val authViewModel: AuthViewModel by viewModels()
-
-        // Initialize FirebaseRepository
-        val firebaseRepository = FirebaseRepository()
-
-        // Start scanning when the app launches
+        // Start scanning for BLE devices when the app launches
         arduinoManager.startScanning()
 
-        // Set Compose content
+        // Step 8: Set Compose UI
         setContent {
             FallDetectionTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    // Call App Navigation Function
                     AppNavigation(
                         modifier = Modifier.padding(innerPadding),
                         authViewModel = authViewModel,
@@ -122,7 +119,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Function to fetch and save FCM Token
+    // Function to fetch and save FCM Token in Firebase Database
     private fun fetchAndSaveFCMToken() {
         FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
@@ -139,7 +136,7 @@ class MainActivity : ComponentActivity() {
             }
     }
 
-    // Function to save token in Firebase Database
+    // Function to store FCM Token in Firebase Database
     private fun saveTokenToFirebase(token: String) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val userRef = FirebaseDatabase.getInstance().reference.child("users").child(userId)

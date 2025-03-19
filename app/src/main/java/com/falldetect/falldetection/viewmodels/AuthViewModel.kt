@@ -1,5 +1,6 @@
 package com.falldetect.falldetection.viewmodels
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -7,8 +8,9 @@ import androidx.lifecycle.ViewModel
 import com.falldetect.falldetection.repositories.FirebaseRepository
 
 class AuthViewModel(
-    private val firebaseRepository: FirebaseRepository = FirebaseRepository()
+    private val firebaseRepository: FirebaseRepository
 ) : ViewModel() {
+
     private val _authState = MutableLiveData<AuthState>()
     val authState: LiveData<AuthState> = _authState
 
@@ -35,10 +37,12 @@ class AuthViewModel(
 
         _authState.value = AuthState.Loading
         Log.d("AuthViewModel", "Login started for email: $email")
+
         firebaseRepository.login(email, password) { success, error ->
             if (success) {
                 _authState.value = AuthState.Authenticated
             } else {
+                Log.e("AuthViewModel", "Login failed: ${error ?: "Unknown error"}")
                 _authState.value = AuthState.Error(error ?: "Something went wrong")
             }
         }

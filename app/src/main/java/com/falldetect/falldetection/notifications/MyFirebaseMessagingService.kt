@@ -8,13 +8,13 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import com.falldetect.falldetection.MainActivity
 import com.falldetect.falldetection.R
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.auth.FirebaseAuth
+import java.util.*
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
@@ -29,10 +29,19 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         Log.d("FCM", "Message received from: ${remoteMessage.from}")
 
+        // Check if message contains a notification payload
         remoteMessage.notification?.let {
             Log.d("FCM", "Notification Title: ${it.title}")
             Log.d("FCM", "Notification Body: ${it.body}")
-            sendNotification(it.title ?: "New Alert", it.body ?: "You have a new notification")
+            sendNotification(it.title ?: "Fall Alert!", it.body ?: "A fall has been detected.")
+        }
+
+        // Check if message contains data payload
+        if (remoteMessage.data.isNotEmpty()) {
+            Log.d("FCM", "Data Payload: ${remoteMessage.data}")
+            val title = remoteMessage.data["title"] ?: "Fall Alert!"
+            val message = remoteMessage.data["message"] ?: "A fall has been detected."
+            sendNotification(title, message)
         }
     }
 
@@ -47,7 +56,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         )
 
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)  // Change to actual notification icon
+            .setSmallIcon(R.drawable.ic_launcher_foreground) // Replace with actual icon
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -55,6 +64,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .setContentIntent(pendingIntent)
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Create a unique notification ID (prevents overwriting notifications)
+        val notificationId = Random().nextInt(100000)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -64,7 +76,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        notificationManager.notify(0, notificationBuilder.build())
+        notificationManager.notify(notificationId, notificationBuilder.build())
     }
 
     private fun saveTokenToFirebase(token: String) {
