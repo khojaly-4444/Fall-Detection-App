@@ -45,7 +45,7 @@ fun UserLinkScreen(navController: NavController, authViewModel: AuthViewModel){
     var otherUid by remember { mutableStateOf("") }
     var linkResultMessage by remember { mutableStateOf("") }//Variable needed for the other user Uid
 
-    Column (                                    // User Linking UI
+    Column (                                // User Linking UI
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
