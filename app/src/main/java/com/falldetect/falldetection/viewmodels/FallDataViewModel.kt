@@ -42,20 +42,6 @@ class FallDataViewModel(
         }
     }
 
-    // Function to add a mock fall event (used for testing)
-    fun addMockFallEvent(userId: String) {
-        viewModelScope.launch {
-            val mockFallEvent = FallEvent(
-                fallType = "Hard Fall",
-                date = getCurrentDate(),
-                time = getCurrentTime(),
-                heartRate = (60..120).random().toString() // Random heart rate for testing
-            )
-
-            firebaseRepository.addFallEvent(mockFallEvent)
-            fetchFallData() // Refresh UI with new event
-        }
-    }
 
     // Function to start listening for real-time fall events
     fun startListeningForFallEvents(context: Context) {
@@ -85,7 +71,7 @@ class FallDataViewModel(
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground) // Use actual notification icon
             .setContentTitle("Fall Detected!")
-            .setContentText("Type: ${fallEvent.fallType}, Heart Rate: ${fallEvent.heartRate} BPM")
+            .setContentText("Type: ${fallEvent.fallType}, Impact Severity: ${fallEvent.impactSeverity} g")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
@@ -94,15 +80,4 @@ class FallDataViewModel(
         notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 
-    // Function to get the current date as a string
-    private fun getCurrentDate(): String {
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        return sdf.format(Date())
-    }
-
-    // Function to get the current time as a string
-    private fun getCurrentTime(): String {
-        val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-        return sdf.format(Date())
-    }
 }

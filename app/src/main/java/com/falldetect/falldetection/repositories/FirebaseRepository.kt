@@ -151,7 +151,7 @@ class FirebaseRepository(
         }
 
         // Combine both datasets and return unique fall events
-        return (currentUserFallData + linkedUserFallData).distinctBy { it.date + it.time + it.heartRate }
+        return (currentUserFallData + linkedUserFallData).distinctBy { it.date + it.time + it.impactSeverity }
     }
 
     // Function to listen for real-time fall events and notify linked user

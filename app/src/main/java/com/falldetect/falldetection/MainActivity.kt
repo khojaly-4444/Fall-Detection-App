@@ -15,15 +15,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.falldetect.falldetection.navigation.AppNavigation
 import com.falldetect.falldetection.repositories.ArduinoManager
 import com.falldetect.falldetection.repositories.FirebaseRepository
 import com.falldetect.falldetection.ui.theme.FallDetectionTheme
 import com.falldetect.falldetection.viewmodels.AuthViewModel
 import com.falldetect.falldetection.viewmodels.AuthViewModelFactory
+import com.falldetect.falldetection.viewmodels.FallDataViewModel
+import com.falldetect.falldetection.models.FallEvent
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -93,19 +97,30 @@ class MainActivity : ComponentActivity() {
         // Initialize Firebase Repository with context
         val firebaseRepository = FirebaseRepository(context = this)
 
-        // Initialize ViewModel
+        // Initialize ViewModels
         val authViewModel: AuthViewModel by viewModels {
             AuthViewModelFactory(applicationContext)
         }
+        val fallDataViewModel: FallDataViewModel by viewModels {
+            object : androidx.lifecycle.ViewModelProvider.Factory {
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                    return FallDataViewModel(firebaseRepository) as T
+                }
+            }
+        }
 
-
-        // Initialize ArduinoManager
+        // Step 8: Start BLE scanning and observe fall events
         val arduinoManager = ArduinoManager(this)
-
-        // Start scanning for BLE devices when the app launches
         arduinoManager.startScanning()
 
-        // Step 8: Set Compose UI
+        lifecycleScope.launch {
+            ArduinoManager.onFallDetected = { fallEvent ->
+                Log.d("MainActivity", "⬇️ Received fall event: $fallEvent")
+                fallDataViewModel.addFallEvent(fallEvent)
+            }
+        }
+
+        // Step 9: Set Compose UI
         setContent {
             FallDetectionTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -119,7 +134,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Function to fetch and save FCM Token in Firebase Database
+    // Function to fetch a fresh token and save it
     private fun fetchAndSaveFCMToken() {
         FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
@@ -136,7 +151,7 @@ class MainActivity : ComponentActivity() {
             }
     }
 
-    // Function to store FCM Token in Firebase Database
+    // Save token to Firebase under user node
     private fun saveTokenToFirebase(token: String) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val userRef = FirebaseDatabase.getInstance().reference.child("users").child(userId)
@@ -149,4 +164,5 @@ class MainActivity : ComponentActivity() {
                 Log.e("FCM", "Failed to save token", e)
             }
     }
+
 }

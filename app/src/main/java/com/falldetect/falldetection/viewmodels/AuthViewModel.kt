@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.falldetect.falldetection.repositories.FirebaseRepository
+import com.google.firebase.messaging.FirebaseMessaging
 
 class AuthViewModel(
     private val firebaseRepository: FirebaseRepository
