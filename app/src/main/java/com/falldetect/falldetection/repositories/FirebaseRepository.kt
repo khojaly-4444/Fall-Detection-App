@@ -9,35 +9,53 @@ import com.falldetect.falldetection.models.FallEvent
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
-import java.io.InputStream
 
-// Firebase Operations
 class FirebaseRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val database: DatabaseReference = FirebaseDatabase.getInstance().reference,
     private val context: Context
 ) {
 
-    // Check if the user is currently authenticated
     fun isUserAuthenticated(): Boolean {
         return auth.currentUser != null
     }
 
-    // Login Function
     fun login(email: String, password: String, callback: (Boolean, String?) -> Unit) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    callback(true, null) // Success
+                    val uid = auth.currentUser?.uid
+                    if (uid != null) {
+                        FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener {
+                            FirebaseMessaging.getInstance().token
+                                .addOnSuccessListener { token ->
+                                    database.child("users").child(uid).child("fcmToken").setValue(token)
+                                        .addOnSuccessListener {
+                                            Log.d("FCM", "Token refreshed and saved on login: $token")
+                                            callback(true, null)
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.e("FCM", "Failed to save token on login", e)
+                                            callback(true, null)
+                                        }
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.e("FCM", "Failed to get FCM token on login", e)
+                                    callback(true, null)
+                                }
+                        }
+                    } else {
+                        callback(true, null)
+                    }
                 } else {
-                    callback(false, task.exception?.message ?: "Login failed") // Error
+                    callback(false, task.exception?.message ?: "Login failed")
                 }
             }
     }
 
-    // Signup Function
     fun signup(email: String, password: String, name: String, callback: (Boolean, String?) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -48,9 +66,27 @@ class FirebaseRepository(
                             "name" to name,
                             "email" to email
                         )
+
                         database.child("users").child(uid).setValue(userMap)
                             .addOnSuccessListener {
-                                callback(true, null) // Success
+                                FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener {
+                                    FirebaseMessaging.getInstance().token
+                                        .addOnSuccessListener { token ->
+                                            database.child("users").child(uid).child("fcmToken").setValue(token)
+                                                .addOnSuccessListener {
+                                                    Log.d("FCM", "Token saved after signup: $token")
+                                                    callback(true, null)
+                                                }
+                                                .addOnFailureListener { e ->
+                                                    Log.e("FCM", "Failed to save token after signup", e)
+                                                    callback(true, null)
+                                                }
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.e("FCM", "Failed to get FCM token after signup", e)
+                                            callback(true, null)
+                                        }
+                                }
                             }
                             .addOnFailureListener { exception ->
                                 callback(false, exception.message ?: "Failed to save user data")
@@ -64,7 +100,6 @@ class FirebaseRepository(
             }
     }
 
-    // Link Users Function
     fun linkUsers(currentUid: String, otherUid: String, callback: (Boolean, String) -> Unit) {
         database.child("users").child(otherUid).get()
             .addOnSuccessListener { snapshot ->
@@ -89,7 +124,6 @@ class FirebaseRepository(
             }
     }
 
-    // Signout Function
     fun signout() {
         auth.signOut()
     }
@@ -98,28 +132,26 @@ class FirebaseRepository(
         return auth.currentUser?.uid
     }
 
-    // Function to add fall event and notify linked user
     suspend fun addFallEvent(fallEvent: FallEvent) {
         val currentUid = auth.currentUser?.uid ?: return
 
-        // Store event for the current user
         val eventRef = database.child("fall-data").child(currentUid).push()
         eventRef.setValue(fallEvent).await()
 
-        // Get the linked user ID
         val linkedUidSnapshot = database.child("linked-users").child(currentUid).get().await()
         val linkedUid = linkedUidSnapshot.getValue(String::class.java)
 
-        // Store event for linked user if one exists and notify them
         if (!linkedUid.isNullOrEmpty()) {
             val linkedEventRef = database.child("fall-data").child(linkedUid).push()
             linkedEventRef.setValue(fallEvent).await()
 
-            // Get the linked user's FCM token
+            val currentUserTokenSnapshot = database.child("users").child(currentUid).child("fcmToken").get().await()
+            val currentUserToken = currentUserTokenSnapshot.getValue(String::class.java)
+
             val linkedUserTokenSnapshot = database.child("users").child(linkedUid).child("fcmToken").get().await()
             val linkedUserToken = linkedUserTokenSnapshot.getValue(String::class.java)
 
-            if (!linkedUserToken.isNullOrEmpty()) {
+            if (!linkedUserToken.isNullOrEmpty() && linkedUserToken != currentUserToken) {
                 sendFCMNotification(
                     linkedUserToken,
                     "Fall Alert!",
@@ -129,20 +161,14 @@ class FirebaseRepository(
         }
     }
 
-    // Function to fetch fall data
     suspend fun getFallData(): List<FallEvent> {
         val currentUid = auth.currentUser?.uid ?: return emptyList()
-
-        // Get Linked User ID
         val linkedUidSnapshot = database.child("linked-users").child(currentUid).get().await()
         val linkedUid = linkedUidSnapshot.getValue(String::class.java)
 
-        // Get fall events for the current user
         val currentUserSnapshot = database.child("fall-data").child(currentUid).get().await()
-        val currentUserFallData =
-            currentUserSnapshot.children.mapNotNull { it.getValue(FallEvent::class.java) }
+        val currentUserFallData = currentUserSnapshot.children.mapNotNull { it.getValue(FallEvent::class.java) }
 
-        // Get fall events for the linked user if exists
         val linkedUserFallData = if (!linkedUid.isNullOrEmpty()) {
             val linkedUserSnapshot = database.child("fall-data").child(linkedUid).get().await()
             linkedUserSnapshot.children.mapNotNull { it.getValue(FallEvent::class.java) }
@@ -150,50 +176,42 @@ class FirebaseRepository(
             emptyList()
         }
 
-        // Combine both datasets and return unique fall events
         return (currentUserFallData + linkedUserFallData).distinctBy { it.date + it.time + it.impactSeverity }
     }
 
-    // Function to listen for real-time fall events and notify linked user
     fun listenForFallEvents(onFallEventDetected: (FallEvent) -> Unit) {
         val currentUid = auth.currentUser?.uid ?: return
-
         val fallDataRef = database.child("fall-data").child(currentUid)
 
         fallDataRef.addChildEventListener(object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 val fallEvent = snapshot.getValue(FallEvent::class.java) ?: return
 
-                // Get linked user ID
+                onFallEventDetected(fallEvent)
+
                 database.child("linked-users").child(currentUid).get()
                     .addOnSuccessListener { linkedUserSnapshot ->
                         val linkedUid = linkedUserSnapshot.getValue(String::class.java)
 
                         if (!linkedUid.isNullOrEmpty()) {
-                            // Retrieve linked user's FCM token
                             database.child("users").child(linkedUid).child("fcmToken").get()
                                 .addOnSuccessListener { tokenSnapshot ->
                                     val linkedUserToken = tokenSnapshot.getValue(String::class.java)
 
-                                    if (!linkedUserToken.isNullOrEmpty()) {
-                                        sendFCMNotification(
-                                            linkedUserToken,
-                                            "Fall Alert!",
-                                            "A fall has been detected for your linked user."
-                                        )
-                                    } else {
-                                        Log.e("FCM", "Linked user FCM token is missing!")
-                                    }
+                                    database.child("users").child(currentUid).child("fcmToken").get()
+                                        .addOnSuccessListener { currentTokenSnapshot ->
+                                            val currentUserToken = currentTokenSnapshot.getValue(String::class.java)
+
+                                            if (!linkedUserToken.isNullOrEmpty() && linkedUserToken != currentUserToken) {
+                                                sendFCMNotification(
+                                                    linkedUserToken,
+                                                    "Fall Alert!",
+                                                    "A fall has been detected for your linked user."
+                                                )
+                                            }
+                                        }
                                 }
-                                .addOnFailureListener { e ->
-                                    Log.e("FCM", "Error retrieving linked user token: ${e.message}")
-                                }
-                        } else {
-                            Log.e("FCM", "No linked user found for $currentUid")
                         }
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("FCM", "Error retrieving linked user ID: ${e.message}")
                     }
             }
 
@@ -220,9 +238,6 @@ class FirebaseRepository(
         }
     }
 
-
-
-    // Function to send push notifications using Firebase Cloud Messaging
     private fun sendFCMNotification(token: String, title: String, message: String) {
         val jsonObject = JSONObject().apply {
             put("message", JSONObject().apply {
@@ -231,15 +246,31 @@ class FirebaseRepository(
                     put("title", title)
                     put("body", message)
                 })
+                put("data", JSONObject().apply {
+                    put("title", title)
+                    put("message", message)
+                })
+                put("android", JSONObject().apply {
+                    put("priority", "HIGH")
+                    put("notification", JSONObject().apply {
+                        put("sound", "default")
+                    })
+                })
             })
         }
+
+        Log.d("FCM", "Sending payload:\n${jsonObject.toString(2)}") // 13 hours to fix this
 
         val request = object : JsonObjectRequest(
             Request.Method.POST,
             "https://fcm.googleapis.com/v1/projects/fall-detection-app-eae40/messages:send",
             jsonObject,
             { response -> Log.d("FCM", "Notification sent successfully: $response") },
-            { error -> Log.e("FCM", "Failed to send notification: ${error.message}") }
+            { error ->
+                val errorBody = error.networkResponse?.data?.toString(Charsets.UTF_8)
+                val status = error.networkResponse?.statusCode
+                Log.e("FCM", "FCM ERROR $status: $errorBody")
+            }
         ) {
             override fun getHeaders(): MutableMap<String, String> {
                 return mutableMapOf(
@@ -251,6 +282,4 @@ class FirebaseRepository(
 
         Volley.newRequestQueue(context).add(request)
     }
-
-
 }
