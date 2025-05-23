@@ -126,25 +126,37 @@ class FirebaseRepository(
 
     fun signout() {
         auth.signOut()
+        isListenerAttached = false
     }
 
     fun getCurrentUserId(): String? {
         return auth.currentUser?.uid
     }
 
+    private var lastFallTimestamp: Long = 0
+
     suspend fun addFallEvent(fallEvent: FallEvent) {
+        val now = System.currentTimeMillis()
+
+        // Suppress duplicate fall events within 5 seconds
+        if (now - lastFallTimestamp < 5000L) {
+            Log.d("FirebaseRepo", "Duplicate fall event suppressed")
+            return
+        }
+
+        lastFallTimestamp = now
+
         val currentUid = auth.currentUser?.uid ?: return
 
+        // Add to current user's fall-data only
         val eventRef = database.child("fall-data").child(currentUid).push()
         eventRef.setValue(fallEvent).await()
 
+        // Notify linked user (no duplicate write)
         val linkedUidSnapshot = database.child("linked-users").child(currentUid).get().await()
         val linkedUid = linkedUidSnapshot.getValue(String::class.java)
 
         if (!linkedUid.isNullOrEmpty()) {
-            val linkedEventRef = database.child("fall-data").child(linkedUid).push()
-            linkedEventRef.setValue(fallEvent).await()
-
             val currentUserTokenSnapshot = database.child("users").child(currentUid).child("fcmToken").get().await()
             val currentUserToken = currentUserTokenSnapshot.getValue(String::class.java)
 
@@ -160,6 +172,7 @@ class FirebaseRepository(
             }
         }
     }
+
 
     suspend fun getFallData(): List<FallEvent> {
         val currentUid = auth.currentUser?.uid ?: return emptyList()
@@ -179,9 +192,18 @@ class FirebaseRepository(
         return (currentUserFallData + linkedUserFallData).distinctBy { it.date + it.time + it.impactSeverity }
     }
 
+    private var isListenerAttached = false
+
     fun listenForFallEvents(onFallEventDetected: (FallEvent) -> Unit) {
         val currentUid = auth.currentUser?.uid ?: return
         val fallDataRef = database.child("fall-data").child(currentUid)
+
+        if (isListenerAttached) {
+            Log.d("FirebaseRepo", "Listener already attached,skipping.")
+            return
+        }
+
+        isListenerAttached = true
 
         fallDataRef.addChildEventListener(object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
@@ -189,37 +211,15 @@ class FirebaseRepository(
 
                 onFallEventDetected(fallEvent)
 
-                database.child("linked-users").child(currentUid).get()
-                    .addOnSuccessListener { linkedUserSnapshot ->
-                        val linkedUid = linkedUserSnapshot.getValue(String::class.java)
-
-                        if (!linkedUid.isNullOrEmpty()) {
-                            database.child("users").child(linkedUid).child("fcmToken").get()
-                                .addOnSuccessListener { tokenSnapshot ->
-                                    val linkedUserToken = tokenSnapshot.getValue(String::class.java)
-
-                                    database.child("users").child(currentUid).child("fcmToken").get()
-                                        .addOnSuccessListener { currentTokenSnapshot ->
-                                            val currentUserToken = currentTokenSnapshot.getValue(String::class.java)
-
-                                            if (!linkedUserToken.isNullOrEmpty() && linkedUserToken != currentUserToken) {
-                                                sendFCMNotification(
-                                                    linkedUserToken,
-                                                    "Fall Alert!",
-                                                    "A fall has been detected for your linked user."
-                                                )
-                                            }
-                                        }
-                                }
-                        }
-                    }
             }
 
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onChildRemoved(snapshot: DataSnapshot) {}
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onCancelled(error: DatabaseError) {
-                Log.e("FirebaseRepo", "Failed to listen for fall events: ${error.message}")
+                // Log.e("FirebaseRepo", "Failed to listen for fall events: ${error.message}")
+                Log.e("FirebaseRepo", "Listener cancelled: ${error.message}")
+                isListenerAttached = false
             }
         })
     }
@@ -239,13 +239,13 @@ class FirebaseRepository(
     }
 
     private fun sendFCMNotification(token: String, title: String, message: String) {
+        // Log the token before sending
+        Log.d("FCM", "Sending to token: $token")
+
         val jsonObject = JSONObject().apply {
             put("message", JSONObject().apply {
                 put("token", token)
-                put("notification", JSONObject().apply {
-                    put("title", title)
-                    put("body", message)
-                })
+
                 put("data", JSONObject().apply {
                     put("title", title)
                     put("message", message)

@@ -29,18 +29,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         Log.d("FCM", "Message received from: ${remoteMessage.from}")
 
-        // Check if message contains a notification payload
-        remoteMessage.notification?.let {
-            Log.d("FCM", "Notification Title: ${it.title}")
-            Log.d("FCM", "Notification Body: ${it.body}")
-            sendNotification(it.title ?: "Fall Alert!", it.body ?: "A fall has been detected.")
-        }
 
         // Check if message contains data payload
         if (remoteMessage.data.isNotEmpty()) {
             Log.d("FCM", "Data Payload: ${remoteMessage.data}")
             val title = remoteMessage.data["title"] ?: "Fall Alert!"
             val message = remoteMessage.data["message"] ?: "A fall has been detected."
+            Log.d("FCM", "Notification received on: ${FirebaseAuth.getInstance().currentUser?.uid}")
             sendNotification(title, message)
         }
     }
