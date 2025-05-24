@@ -64,13 +64,13 @@ fun HomeScreen(modifier: Modifier = Modifier,
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFFFDD0))
+            .background(Color(0xFFF5F5DC))
     ) {
         // Sign Out button
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFDC3545))
+                .background(Color(0xFFB22222))
                 .padding(vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -93,7 +93,7 @@ fun HomeScreen(modifier: Modifier = Modifier,
         TabRow(
             selectedTabIndex = selectedTabIndex,
             modifier = Modifier.fillMaxWidth(),
-            containerColor = Color(0xFFDC3545),
+            containerColor = Color(0xFFB22222),
             contentColor = Color.White
         ) {
             tabs.forEachIndexed { index, title ->

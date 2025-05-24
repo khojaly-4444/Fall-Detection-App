@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -67,7 +68,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFFDD0)) // Background color
+            .background(Color(0xFFF5F5DC)) // Background color
     ) {
         Column(
             modifier = Modifier
@@ -150,6 +151,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Password") },
+                    visualTransformation = PasswordVisualTransformation(),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = Color(0xFFFF9800),
                         unfocusedBorderColor = Color(0xFF6C757D)
@@ -171,7 +173,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFDC3545), // Button color
+                    containerColor = Color(0xFFB22222), // Button color
                     contentColor = Color.White
                 )
             ) {

@@ -72,7 +72,7 @@ fun UserLinkScreen(navController: NavController, authViewModel: AuthViewModel){
             Text(
                 text = currentUid,
                 fontSize = 16.sp,
-                color = Color(0xFF45231D),
+                color = Color(0xFF593125),
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
                     .background(Color(0xFFF5F5F5))
@@ -90,7 +90,7 @@ fun UserLinkScreen(navController: NavController, authViewModel: AuthViewModel){
                     Toast.makeText(context, "User ID copied to clipboard", Toast.LENGTH_SHORT).show()
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFDC3545),
+                    containerColor = Color(0xFFB22222),
                     contentColor = Color.White
                 )
             ) {
@@ -133,7 +133,7 @@ fun UserLinkScreen(navController: NavController, authViewModel: AuthViewModel){
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF28A745),
+                    containerColor = Color(0xFF7BA05B),
                     contentColor = Color.White
                 ),
                 modifier = Modifier.fillMaxWidth()

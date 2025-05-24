@@ -53,7 +53,7 @@ fun FallDataCard(fallType: String, date: String, time: String, impactSeverity: S
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFD7CCC8)) // Light brown color
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFD2B48C)) // Light brown color
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

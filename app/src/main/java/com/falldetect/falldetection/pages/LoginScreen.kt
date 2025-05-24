@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -66,7 +69,7 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFFDD0))
+            .background(Color(0xFFF5F5DC))
     )
 
     Column(
@@ -137,6 +140,7 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
+                visualTransformation = PasswordVisualTransformation(),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     focusedBorderColor = Color(0xFFFF9800),
                     unfocusedBorderColor = Color(0xFF6C757D)
@@ -156,7 +160,7 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
                 .padding(horizontal = 16.dp),
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFDC3545),
+                containerColor = Color(0xFFB22222),
                 contentColor = Color.White
             )
         ) {
