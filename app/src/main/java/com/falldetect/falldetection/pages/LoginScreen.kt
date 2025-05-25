@@ -48,13 +48,15 @@ import com.falldetect.falldetection.ui.theme.TitleStyle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
-                                                                     // Function for Login and Password UI + Navigation
+
+    // Input state
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(authState.value) {                               // function when the sign up is validated to take to homepage
+    // Handle auth state changes
+    LaunchedEffect(authState.value) {
         when (authState.value) {
             is AuthState.Authenticated -> navController.navigate("home")
             is AuthState.Error -> Toast.makeText(
@@ -79,6 +81,7 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Logo and title
         Column (
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
@@ -121,7 +124,6 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
             Spacer(modifier = Modifier.height(16.dp))
 
             // Email Input
-
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -169,7 +171,7 @@ fun LoginScreen(modifier: Modifier = Modifier, navController: NavController, aut
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Sign Up option
+        // Link to Sign Up page
         TextButton(
             onClick = { navController.navigate("signup") },
             colors = ButtonDefaults.textButtonColors(

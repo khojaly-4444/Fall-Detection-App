@@ -43,13 +43,13 @@ fun HomeScreen(modifier: Modifier = Modifier,
                authViewModel: AuthViewModel,
                firebaseRepository: FirebaseRepository
 ) {
+    // ViewModel for fetching fall event data
     val fallDataViewModel: FallDataViewModel = viewModel(
         factory = FallDataViewModelFactory(firebaseRepository)
     )
     val authState = authViewModel.authState.observeAsState()
 
-
-
+    // Redirect to login screen if user is unauthenticated
     LaunchedEffect(authState.value) {
         when (authState.value) {
             is AuthState.Unauthenticated -> navController.navigate("login")
@@ -57,7 +57,7 @@ fun HomeScreen(modifier: Modifier = Modifier,
         }
     }
 
-    // Track the Tab
+    // Track which tab is selected (0 = fall data, 1 = User linking)
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Fall Data", "User Linking")
 
@@ -106,7 +106,7 @@ fun HomeScreen(modifier: Modifier = Modifier,
             }
         }
 
-        //Display content of selected tab
+        // Display content of selected tab
         when (selectedTabIndex) {
             0 -> FallDataScreen(viewModel = fallDataViewModel)                 // tab for Fall Data
             1 -> UserLinkScreen(navController = navController, authViewModel = authViewModel)   // Tab for User Linkage

@@ -22,11 +22,11 @@ class FallDataViewModel(
     private val firebaseRepository: FirebaseRepository
 ) : ViewModel() {
 
-    // StateFlow to observe fall data updates
+    // Observes fall data updates
     private val _fallData = MutableStateFlow<List<FallEvent>>(emptyList())
     val fallData: StateFlow<List<FallEvent>> = _fallData
 
-    // Function to fetch fall data from Firebase
+    // Fetch all fall data from Firebase (user + linked user)
     fun fetchFallData() {
         viewModelScope.launch {
             val result = firebaseRepository.getFallData()
@@ -38,16 +38,15 @@ class FallDataViewModel(
     fun addFallEvent(fallEvent: FallEvent) {
         viewModelScope.launch {
             firebaseRepository.addFallEvent(fallEvent)
-            fetchFallData() // Refresh the UI with the new event
+            fetchFallData()
         }
     }
 
-
-    // Function to start listening for real-time fall events
+    // No longer used
     fun startListeningForFallEvents(context: Context) {
         firebaseRepository.listenForFallEvents { fallEvent ->
-            sendNotification(context, fallEvent)  // Notify the user on fall detection
-            fetchFallData() //  Refresh UI with new fall data
+            sendNotification(context, fallEvent)
+            fetchFallData()
         }
     }
 
@@ -69,14 +68,14 @@ class FallDataViewModel(
 
         // Build and display the notification
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Use actual notification icon
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Fall Detected!")
             .setContentText("Type: ${fallEvent.fallType}, Impact Severity: ${fallEvent.impactSeverity} g")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
 
-        // Show the notification
+        // Unique notification ID using current time
         notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 

@@ -13,7 +13,7 @@ import com.falldetect.falldetection.viewmodels.AuthViewModel
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel, firebaseRepository: FirebaseRepository) {
-    val navController = rememberNavController()
+    val navController = rememberNavController()  // Navigation controller to manage screen navigation
 
     NavHost(navController = navController, startDestination = "login", builder = {
          composable("login"){

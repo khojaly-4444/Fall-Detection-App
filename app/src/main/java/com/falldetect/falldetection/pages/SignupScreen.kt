@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,6 +48,7 @@ import com.falldetect.falldetection.ui.theme.TitleStyle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
+
     // Input state
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -53,7 +56,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
     val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
 
-    // Authentication state handling
+    // Handle auth state changes
     LaunchedEffect(authState.value) {
         when (authState.value) {
             is AuthState.Authenticated -> navController.navigate("home")
@@ -68,13 +71,13 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5DC)) // Background color
+            .background(Color(0xFFF5F5DC))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp), // Add horizontal padding
-            verticalArrangement = Arrangement.SpaceBetween,
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Logo, Title, and Subtitle
@@ -82,7 +85,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 40.dp) // Move higher on the screen
+                    .padding(top = 40.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.fu_logo),
@@ -104,7 +107,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp)) // Space between title and form
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Signup Form Section
             Column(
@@ -119,7 +122,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Name Input Field
+                // Name Input
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it},
@@ -132,7 +135,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Email Input Field
+                // Email Input
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -146,7 +149,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Password Input Field
+                // Password Input
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -182,7 +185,7 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Navigate to Login Page
+            // Link to Login Page
             TextButton(
                 onClick = { navController.navigate("login") },
                 colors = ButtonDefaults.textButtonColors(
@@ -191,6 +194,8 @@ fun SignupScreen(modifier: Modifier = Modifier, navController: NavController, au
             ) {
                 Text("Already have an account? Login")
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

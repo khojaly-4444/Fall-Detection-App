@@ -7,9 +7,12 @@ import com.falldetect.falldetection.repositories.FirebaseRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 
+// Factory to provide AuthViewModel with dependencies (FirebaseRepository)
 class AuthViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        // Check if the requested ViewModel is AuthViewModel
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
+
             // Properly initialize FirebaseRepository with required parameters
             val firebaseRepository = FirebaseRepository(
                 auth = FirebaseAuth.getInstance(),

@@ -34,7 +34,7 @@ import androidx.navigation.NavController
 import com.falldetect.falldetection.viewmodels.AuthViewModel
 import com.google.firebase.auth.FirebaseAuth
 
-// Function for User Linking tab
+// User Linking tab UI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,10 +42,10 @@ fun UserLinkScreen(navController: NavController, authViewModel: AuthViewModel){
     val auth = FirebaseAuth.getInstance()
     val currentUid = auth.currentUser?.uid      //Gets the user Uid
     val context = LocalContext.current
-    var otherUid by remember { mutableStateOf("") }
-    var linkResultMessage by remember { mutableStateOf("") }//Variable needed for the other user Uid
+    var otherUid by remember { mutableStateOf("") } // For entering the UID to link with
+    var linkResultMessage by remember { mutableStateOf("") }  // Message after link attempt
 
-    Column (                                // User Linking UI
+    Column (
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
@@ -98,7 +98,7 @@ fun UserLinkScreen(navController: NavController, authViewModel: AuthViewModel){
             }
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Input Other User ID
+            // Input for linking Other User ID
             Text(
                 text = "Enter User ID:",
                 fontSize = 18.sp,
@@ -120,7 +120,7 @@ fun UserLinkScreen(navController: NavController, authViewModel: AuthViewModel){
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Link User Button
+            // Link User Button and logic
             Button(
                 onClick = {
                     if (currentUid != null && otherUid.isNotEmpty()) {
@@ -152,6 +152,7 @@ fun UserLinkScreen(navController: NavController, authViewModel: AuthViewModel){
                 )
             }
         } else {
+            // Show error if UID cannot be retrieved
             Text(
                 text = "Error: Could not retrieve your User ID. Please log in again.",
                 color = Color.Red,

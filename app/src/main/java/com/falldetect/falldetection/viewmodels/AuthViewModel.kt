@@ -16,10 +16,10 @@ class AuthViewModel(
     val authState: LiveData<AuthState> = _authState
 
     init {
-        checkAuthStatus()
+        checkAuthStatus()   // Check user status on ViewModel init
     }
 
-    // Function for checking whether user is authenticated or not
+    // Checks if a user is already authenticated
     fun checkAuthStatus() {
         if (firebaseRepository.isUserAuthenticated()) {
             _authState.value = AuthState.Authenticated
@@ -28,7 +28,7 @@ class AuthViewModel(
         }
     }
 
-    // Function for login process
+    // Handles login flow and updates auth state
     fun login(email: String, password: String) {
         if (email.isEmpty() || password.isEmpty()) {
             _authState.value = AuthState.Error("Email and Password can't be empty")
@@ -49,7 +49,7 @@ class AuthViewModel(
         }
     }
 
-    // Function for sign-up process
+    // Handles signup and stores user info in Firebase
     fun signup(email: String, password: String, name: String) {
         if (email.isEmpty() || password.isEmpty() || name.isEmpty()) {
             _authState.value = AuthState.Error("Fields cannot be empty")
@@ -68,13 +68,13 @@ class AuthViewModel(
         }
     }
 
-    // Function for sign-out process
+    // Signs out the user and updates auth state
     fun signout() {
         firebaseRepository.signout()
         _authState.value = AuthState.Unauthenticated
     }
 
-    // Function for linking users
+    // Links this user to another by UID
     fun linkUsers(currentUid: String, otherUid: String, callback: (Boolean, String) -> Unit) {
         if (currentUid.isEmpty() || otherUid.isEmpty()) {
             callback(false, "Invalid User ID(s).")
@@ -87,10 +87,10 @@ class AuthViewModel(
     }
 }
 
-// Objects for representing different states of authentication
+// Sealed class to represent various authentication states
 sealed class AuthState {
     object Authenticated : AuthState()
     object Unauthenticated : AuthState()
-    object Loading : AuthState() // State when Firebase is loading
+    object Loading : AuthState()
     data class Error(val message: String) : AuthState()
 }

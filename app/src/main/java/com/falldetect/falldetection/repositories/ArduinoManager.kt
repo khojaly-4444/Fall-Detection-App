@@ -16,9 +16,11 @@ import java.util.*
 class ArduinoManager(private val context: Context) {
 
     companion object {
+        // UUIDs for the BLE service and characteristic
         private val FALL_SERVICE_UUID = UUID.fromString("19B10000-E8F2-537E-4F6C-D104768A1214")
         private val FALL_CHARACTERISTIC_UUID = UUID.fromString("19B10001-E8F2-537E-4F6C-D104768A1214")
 
+        // Callback to notify the app when a fall is detected
         var onFallDetected: ((FallEvent) -> Unit)? = null
     }
 
@@ -29,6 +31,7 @@ class ArduinoManager(private val context: Context) {
     private val scanResults = mutableListOf<ScanResult>()
     private var isScanning = false
 
+    // Check runtime Bluetooth permissions
     private fun hasPermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
@@ -36,6 +39,7 @@ class ArduinoManager(private val context: Context) {
         } else true
     }
 
+    // BLE scan callback
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -57,6 +61,7 @@ class ArduinoManager(private val context: Context) {
         }
     }
 
+    // Start scanning for BLE devices
     @SuppressLint("MissingPermission")
     fun startScanning(targetDeviceName: String? = "Seeed_BLE") {
         if (!hasPermissions()) {
@@ -70,6 +75,7 @@ class ArduinoManager(private val context: Context) {
         Log.d("ArduinoManager", "Started BLE scanning...")
     }
 
+    // Stop BLE scanning
     @SuppressLint("MissingPermission")
     fun stopScanning() {
         if (!isScanning) return
@@ -82,6 +88,7 @@ class ArduinoManager(private val context: Context) {
         isScanning = false
     }
 
+    // Connect to selected BLE device
     @SuppressLint("MissingPermission")
     fun connectToDevice(device: BluetoothDevice) {
         device.connectGatt(context, false, object : BluetoothGattCallback() {
@@ -92,7 +99,7 @@ class ArduinoManager(private val context: Context) {
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.e("ArduinoManager", "Disconnected from ${device.name}")
                     gatt.close()
-                    startScanning()
+                    startScanning() // Reconnect logic
                 }
             }
 
@@ -100,6 +107,7 @@ class ArduinoManager(private val context: Context) {
                 val service = gatt.getService(FALL_SERVICE_UUID)
                 val characteristic = service?.getCharacteristic(FALL_CHARACTERISTIC_UUID)
                 if (characteristic != null) {
+                    // Enable notifications
                     gatt.setCharacteristicNotification(characteristic, true)
                     val descriptor = characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
                     descriptor?.let {
@@ -112,6 +120,7 @@ class ArduinoManager(private val context: Context) {
                 }
             }
 
+            // Called when a BLE notification is received
             override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
                 if (characteristic.uuid == FALL_CHARACTERISTIC_UUID) {
                     val message = characteristic.value.toString(Charsets.UTF_8)
@@ -122,10 +131,12 @@ class ArduinoManager(private val context: Context) {
                         val fallType = parts[0].trim().replaceFirstChar { it.uppercaseChar() } + " Fall"
                         val impact = parts[1].trim()
 
+                        // Format date/time
                         val now = Date()
                         val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(now)
                         val time = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now)
 
+                        // Construct FallEvent model
                         val fallEvent = FallEvent(
                             fallType = fallType,
                             date = date,
@@ -133,7 +144,7 @@ class ArduinoManager(private val context: Context) {
                             impactSeverity = impact
                         )
 
-                        // 👉 Send to the ViewModel or UI
+                        // Trigger callback to update UI or ViewModel
                         onFallDetected?.invoke(fallEvent)
                     }
                 }

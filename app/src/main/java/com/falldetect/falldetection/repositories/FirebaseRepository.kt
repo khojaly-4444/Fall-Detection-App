@@ -19,10 +19,12 @@ class FirebaseRepository(
     private val context: Context
 ) {
 
+    // Check if a user is logged in
     fun isUserAuthenticated(): Boolean {
         return auth.currentUser != null
     }
 
+    // Login logic with FCM Token update
     fun login(email: String, password: String, callback: (Boolean, String?) -> Unit) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -56,6 +58,7 @@ class FirebaseRepository(
             }
     }
 
+    // Signup logic with user info + FCM token storage
     fun signup(email: String, password: String, name: String, callback: (Boolean, String?) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -100,6 +103,7 @@ class FirebaseRepository(
             }
     }
 
+    // Link two users together by storing their IDs under "linked-users"
     fun linkUsers(currentUid: String, otherUid: String, callback: (Boolean, String) -> Unit) {
         database.child("users").child(otherUid).get()
             .addOnSuccessListener { snapshot ->
@@ -124,6 +128,7 @@ class FirebaseRepository(
             }
     }
 
+    // Sign out the user and detach listener flag
     fun signout() {
         auth.signOut()
         isListenerAttached = false
@@ -135,6 +140,7 @@ class FirebaseRepository(
 
     private var lastFallTimestamp: Long = 0
 
+    // Add a fall event to database and notify linked user
     suspend fun addFallEvent(fallEvent: FallEvent) {
         val now = System.currentTimeMillis()
 
@@ -152,7 +158,7 @@ class FirebaseRepository(
         val eventRef = database.child("fall-data").child(currentUid).push()
         eventRef.setValue(fallEvent).await()
 
-        // Notify linked user (no duplicate write)
+        // Notify linked user via FCM if not self
         val linkedUidSnapshot = database.child("linked-users").child(currentUid).get().await()
         val linkedUid = linkedUidSnapshot.getValue(String::class.java)
 
@@ -173,7 +179,7 @@ class FirebaseRepository(
         }
     }
 
-
+    // Retrieve fall data for current user + linked user
     suspend fun getFallData(): List<FallEvent> {
         val currentUid = auth.currentUser?.uid ?: return emptyList()
         val linkedUidSnapshot = database.child("linked-users").child(currentUid).get().await()
@@ -189,11 +195,13 @@ class FirebaseRepository(
             emptyList()
         }
 
+        // Remove duplicate entries (just in case)
         return (currentUserFallData + linkedUserFallData).distinctBy { it.date + it.time + it.impactSeverity }
     }
 
     private var isListenerAttached = false
 
+    // Real-time listener for new fall events
     fun listenForFallEvents(onFallEventDetected: (FallEvent) -> Unit) {
         val currentUid = auth.currentUser?.uid ?: return
         val fallDataRef = database.child("fall-data").child(currentUid)
@@ -217,13 +225,13 @@ class FirebaseRepository(
             override fun onChildRemoved(snapshot: DataSnapshot) {}
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onCancelled(error: DatabaseError) {
-                // Log.e("FirebaseRepo", "Failed to listen for fall events: ${error.message}")
                 Log.e("FirebaseRepo", "Listener cancelled: ${error.message}")
                 isListenerAttached = false
             }
         })
     }
 
+    // Read Firebase service account token for HTTP FCM call
     private fun getAccessToken(): String {
         return try {
             val credentials = GoogleCredentials
@@ -238,6 +246,7 @@ class FirebaseRepository(
         }
     }
 
+    // Send push notification using Firebase HTTP v1 API
     private fun sendFCMNotification(token: String, title: String, message: String) {
         // Log the token before sending
         Log.d("FCM", "Sending to token: $token")

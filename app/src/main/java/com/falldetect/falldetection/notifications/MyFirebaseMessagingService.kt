@@ -18,12 +18,14 @@ import java.util.*
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
+    // Called when a new FCM token is generated
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d("FCM", "Refreshed token: $token")
         saveTokenToFirebase(token)
     }
 
+    // Called when an FCM message is received
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
@@ -40,6 +42,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
+    // Builds and displays notification
     private fun sendNotification(title: String, message: String) {
         val channelId = "fall_detection_alerts"
 
@@ -51,7 +54,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         )
 
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_fall_notification) // Replace with actual icon
+            .setSmallIcon(R.drawable.ic_fall_notification)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -63,6 +66,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // Create a unique notification ID (prevents overwriting notifications)
         val notificationId = Random().nextInt(100000)
 
+        // Create notification channel for android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId, "Fall Detection Alerts",
@@ -74,6 +78,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         notificationManager.notify(notificationId, notificationBuilder.build())
     }
 
+    // Saves the FCM token to the firebase realtime database
     private fun saveTokenToFirebase(token: String) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val userRef = FirebaseDatabase.getInstance().reference.child("users").child(userId)

@@ -23,6 +23,7 @@ import com.falldetect.falldetection.viewmodels.FallDataViewModel
 
 @Composable
 fun FallDataScreen(viewModel: FallDataViewModel) {
+    // Observe the list of fall events from the ViewModel
     val fallEvents: List<FallEvent> by viewModel.fallData.collectAsState()
 
     // Fetch fall data from Firebase on first load
@@ -30,6 +31,7 @@ fun FallDataScreen(viewModel: FallDataViewModel) {
         viewModel.fetchFallData()
     }
 
+    // Display list of fall events in scrollable column
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -53,7 +55,7 @@ fun FallDataCard(fallType: String, date: String, time: String, impactSeverity: S
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFD2B48C)) // Light brown color
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFD2B48C))
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
