@@ -196,7 +196,7 @@ class FirebaseRepository(
         }
 
         // Remove duplicate entries (just in case)
-        return (currentUserFallData + linkedUserFallData).distinctBy { it.date + it.time + it.impactSeverity }
+        return (currentUserFallData + linkedUserFallData).distinctBy { it.date + it.time + it.impactIntensity }
     }
 
     private var isListenerAttached = false

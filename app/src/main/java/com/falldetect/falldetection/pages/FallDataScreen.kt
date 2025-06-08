@@ -43,14 +43,14 @@ fun FallDataScreen(viewModel: FallDataViewModel) {
                 fallType = event.fallType,
                 date = event.date,
                 time = event.time,
-                impactSeverity = event.impactSeverity
+                impactIntensity = event.impactIntensity
             )
         }
     }
 }
 
 @Composable
-fun FallDataCard(fallType: String, date: String, time: String, impactSeverity: String) {
+fun FallDataCard(fallType: String, date: String, time: String, impactIntensity: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -63,7 +63,7 @@ fun FallDataCard(fallType: String, date: String, time: String, impactSeverity: S
             Text("Type: $fallType", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Text("Date: $date", fontSize = 16.sp)
             Text("Time: $time", fontSize = 16.sp)
-            Text("Impact Severity: $impactSeverity", fontSize = 16.sp, color = Color.Red)
+            Text("Impact Intensity: $impactIntensity", fontSize = 16.sp, color = Color.Red)
         }
     }
 }

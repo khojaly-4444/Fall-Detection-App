@@ -4,5 +4,5 @@ data class FallEvent(
     val fallType: String = "",
     val date: String = "",
     val time: String = "",
-    val impactSeverity: String = ""
+    val impactIntensity: String = ""
 )

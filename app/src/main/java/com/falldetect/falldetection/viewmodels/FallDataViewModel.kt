@@ -70,7 +70,7 @@ class FallDataViewModel(
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Fall Detected!")
-            .setContentText("Type: ${fallEvent.fallType}, Impact Severity: ${fallEvent.impactSeverity} g")
+            .setContentText("Type: ${fallEvent.fallType}, Impact Intensity: ${fallEvent.impactIntensity} g")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()

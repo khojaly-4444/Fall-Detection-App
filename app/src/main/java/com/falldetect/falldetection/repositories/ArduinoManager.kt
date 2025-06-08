@@ -51,7 +51,7 @@ class ArduinoManager(private val context: Context) {
                 if (name.equals("Seeed_BLE", true)) {
                     Log.d("ArduinoManager", "✅ Found Seeed_BLE! Connecting...")
                     stopScanning()
-                    connectToDevice(device)
+                            connectToDevice(device)
                 }
             }
         }
@@ -141,7 +141,7 @@ class ArduinoManager(private val context: Context) {
                             fallType = fallType,
                             date = date,
                             time = time,
-                            impactSeverity = impact
+                            impactIntensity = impact
                         )
 
                         // Trigger callback to update UI or ViewModel
